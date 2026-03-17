@@ -124,7 +124,7 @@ function Tasks() {
             console.error("Error deleting task:", error);
             toast.error("Something went wrong while deleting the task.");
         } finally {
-            setActionLoading(true);
+            setActionLoading(false);
         }
     };
 

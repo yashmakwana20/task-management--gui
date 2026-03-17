@@ -1,24 +1,49 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { register } from "../services/authService";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { register } from "../services/authService";
+import AuthLayout from "../components/AuthLayout";
 
 function Register() {
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+    });
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
 
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (loading) return;
 
+        const name = formData.name.trim();
+        const email = formData.email.trim();
+        const password = formData.password.trim();
+        const confirmPassword = formData.confirmPassword.trim();
+
+        if (!name || !email || !password || !confirmPassword) {
+            toast.error("Please fill all fields.");
+            return;
+        }
+
+        if (password.length < 6) {
+            toast.error("Password must be at least 6 characters.");
+            return;
+        }
+
         if (password !== confirmPassword) {
-            toast.error("Password and Confirm Password do not match");
+            toast.error("Password and Confirm Password do not match.");
             return;
         }
 
@@ -26,12 +51,16 @@ function Register() {
             setLoading(true);
 
             const data = await register(name, email, password);
-            console.log("Register response:", data);
+
+            if (data?.isError) {
+                toast.error(data.message || "Registration failed");
+                return;
+            }
 
             toast.success("Registration successful!");
             navigate("/");
         } catch (error) {
-            console.error(error);
+            console.error("Register error:", error);
             toast.error("Registration failed");
         } finally {
             setLoading(false);
@@ -39,90 +68,83 @@ function Register() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-            <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-8">
-                <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
-                    <p className="text-gray-500 mt-2">Register to get started</p>
+        <AuthLayout
+            title="Create Account"
+            subtitle="Register to start using the task management system."
+            footerText="Already have an account?"
+            footerLinkText="Login"
+            footerLinkTo="/"
+        >
+            <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                        Name
+                    </label>
+                    <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Enter your name"
+                        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Name
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="Enter your name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        />
-                    </div>
+                <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                        Email
+                    </label>
+                    <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="Enter your email"
+                        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
+                </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email
-                        </label>
-                        <input
-                            type="email"
-                            placeholder="Enter your email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        />
-                    </div>
+                <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                        Password
+                    </label>
+                    <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Enter password"
+                        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
+                </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Password
-                        </label>
-                        <input
-                            type="password"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        />
-                    </div>
+                <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                        Confirm Password
+                    </label>
+                    <input
+                        type="password"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        placeholder="Confirm password"
+                        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
+                </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Confirm Password
-                        </label>
-                        <input
-                            type="password"
-                            placeholder="Confirm your password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className={`w-full py-3 rounded-lg font-semibold text-white transition ${loading
-                                ? "bg-green-400 cursor-not-allowed"
-                                : "bg-green-600 hover:bg-green-700"
-                            }`}
-                    >
-                        {loading ? "Registering..." : "Register"}
-                    </button>
-                </form>
-
-                <p className="text-center text-sm text-gray-600 mt-6">
-                    Already have an account?{" "}
-                    <Link to="/" className="text-blue-600 font-medium hover:underline">
-                        Login
-                    </Link>
-                </p>
-            </div>
-        </div>
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                >
+                    {loading ? "Registering..." : "Register"}
+                </button>
+            </form>
+        </AuthLayout>
     );
 }
 
