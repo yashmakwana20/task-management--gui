@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getTasks } from "../services/taskService";
 import Loader from "../components/Loader";
 
 function Dashboard() {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const navigate = useNavigate();
 
     const loadTasks = async () => {
         try {
@@ -24,7 +27,7 @@ function Dashboard() {
     }, []);
 
     if (loading) {
-        return <Loader text="Loading dashboard..." />;
+        return <Loader />;
     }
 
     const totalTasks = tasks.length;
@@ -50,79 +53,86 @@ function Dashboard() {
         }
     };
 
+    const StatCard = ({ title, value, onClick }) => (
+        <button
+            onClick={onClick}
+            className="bg-white shadow-md rounded-xl p-5 text-left hover:shadow-lg transition w-full"
+        >
+            <p className="text-sm text-gray-500">{title}</p>
+            <h3 className="text-2xl font-bold text-gray-800 mt-2">{value}</h3>
+        </button>
+    );
+
     return (
-        <div className="p-6">
+        <div className="p-6 bg-gray-50 min-h-screen">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Dashboard</h2>
 
-            {loading ? (
-                <div className="bg-white rounded-lg shadow p-6 text-gray-600">
-                    Loading dashboard...
-                </div>
-            ) : (
-                <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <p className="text-sm text-gray-500">Total Tasks</p>
-                            <h3 className="text-2xl font-bold text-gray-800">{totalTasks}</h3>
-                        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                <StatCard
+                    title="Total Tasks"
+                    value={totalTasks}
+                    onClick={() => navigate("/tasks")}
+                />
+                <StatCard
+                    title="Pending"
+                    value={pendingTasks}
+                    onClick={() => navigate("/tasks?status=Pending")}
+                />
+                <StatCard
+                    title="In Progress"
+                    value={inProgressTasks}
+                    onClick={() => navigate("/tasks?status=In%20Progress")}
+                />
+                <StatCard
+                    title="Completed"
+                    value={completedTasks}
+                    onClick={() => navigate("/tasks?status=Completed")}
+                />
+                <StatCard
+                    title="High Priority"
+                    value={highPriorityTasks}
+                    onClick={() => navigate("/tasks?priority=High")}
+                />
+            </div>
 
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <p className="text-sm text-gray-500">Pending</p>
-                            <h3 className="text-2xl font-bold text-yellow-600">{pendingTasks}</h3>
-                        </div>
+            <div className="bg-white rounded-xl shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                    Recent Tasks
+                </h3>
 
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <p className="text-sm text-gray-500">In Progress</p>
-                            <h3 className="text-2xl font-bold text-blue-600">{inProgressTasks}</h3>
-                        </div>
-
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <p className="text-sm text-gray-500">Completed</p>
-                            <h3 className="text-2xl font-bold text-green-600">{completedTasks}</h3>
-                        </div>
-
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <p className="text-sm text-gray-500">High Priority</p>
-                            <h3 className="text-2xl font-bold text-red-600">{highPriorityTasks}</h3>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <div className="p-4 border-b">
-                            <h3 className="text-lg font-semibold text-gray-800">Recent Tasks</h3>
-                        </div>
-
-                        {recentTasks.length === 0 ? (
-                            <div className="p-6 text-gray-600">No tasks found.</div>
-                        ) : (
-                            <table className="min-w-full">
-                                <thead className="bg-gray-100">
-                                    <tr>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">ID</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Title</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Priority</th>
-                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
+                {recentTasks.length === 0 ? (
+                    <p className="text-gray-500">No tasks found.</p>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full">
+                            <thead className="bg-gray-100">
+                                <tr>
+                                    <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">ID</th>
+                                    <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Title</th>
+                                    <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Priority</th>
+                                    <th className="text-left px-4 py-3 text-sm font-semibold text-gray-700">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {recentTasks.map((task) => (
+                                    <tr key={task.id} className="border-t">
+                                        <td className="px-4 py-3">{task.id}</td>
+                                        <td className="px-4 py-3">{task.title}</td>
+                                        <td className="px-4 py-3">{task.priority}</td>
+                                        <td className="px-4 py-3">
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-sm ${getStatusClass(task.status)}`}
+                                            >
+                                                {task.status}
+                                            </span>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {recentTasks.map((task) => (
-                                        <tr key={task.id} className="border-t hover:bg-gray-50">
-                                            <td className="px-6 py-4">{task.id}</td>
-                                            <td className="px-6 py-4">{task.title}</td>
-                                            <td className="px-6 py-4">{task.priority}</td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-3 py-1 text-sm rounded-full ${getStatusClass(task.status)}`}>
-                                                    {task.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                </>
-            )}
+                )}
+            </div>
         </div>
     );
 }

@@ -7,6 +7,7 @@ import {
 } from "../services/taskService";
 import Loader from "../components/Loader";
 import toast from "react-hot-toast";
+import { useSearchParams } from "react-router-dom";
 
 function Tasks() {
     const getEmptyTask = () => ({
@@ -24,10 +25,15 @@ function Tasks() {
     const [showForm, setShowForm] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [taskForm, setTaskForm] = useState(getEmptyTask());
+    const [searchParams] = useSearchParams();
 
     const [searchText, setSearchText] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All");
-    const [priorityFilter, setPriorityFilter] = useState("All");
+    const [statusFilter, setStatusFilter] = useState(
+        searchParams.get("status") || "All"
+    );
+    const [priorityFilter, setPriorityFilter] = useState(
+        searchParams.get("priority") || "All"
+    );
 
     const loadTasks = async () => {
         try {
@@ -44,7 +50,9 @@ function Tasks() {
 
     useEffect(() => {
         loadTasks();
-    }, []);
+        setStatusFilter(searchParams.get("status") || "All");
+        setPriorityFilter(searchParams.get("priority") || "All");
+    }, [searchParams]);
 
     const resetForm = () => {
         setTaskForm(getEmptyTask());
