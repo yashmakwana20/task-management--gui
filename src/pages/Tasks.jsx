@@ -35,6 +35,9 @@ function Tasks() {
         searchParams.get("priority") || "All"
     );
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const tasksPerPage = 5;
+
     const loadTasks = async () => {
         try {
             setLoading(true);
@@ -53,6 +56,10 @@ function Tasks() {
         setStatusFilter(searchParams.get("status") || "All");
         setPriorityFilter(searchParams.get("priority") || "All");
     }, [searchParams]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchText, statusFilter, priorityFilter]);
 
     const resetForm = () => {
         setTaskForm(getEmptyTask());
@@ -160,6 +167,27 @@ function Tasks() {
             completed: tasks.filter((x) => x.status === "Completed").length,
         };
     }, [tasks]);
+
+    const totalPages = Math.ceil(filteredTasks.length / tasksPerPage);
+
+    const paginatedTasks = useMemo(() => {
+        const startIndex = (currentPage - 1) * tasksPerPage;
+        const endIndex = startIndex + tasksPerPage;
+        return filteredTasks.slice(startIndex, endIndex);
+    }, [filteredTasks, currentPage]);
+
+    const goToPage = (page) => {
+        if (page < 1 || page > totalPages) return;
+        setCurrentPage(page);
+    };
+
+    useEffect(() => {
+        const total = Math.ceil(filteredTasks.length / tasksPerPage) || 1;
+
+        if (currentPage > total) {
+            setCurrentPage(total);
+        }
+    }, [filteredTasks, currentPage]);
 
     const getStatusClass = (status) => {
         switch (status) {
@@ -384,7 +412,7 @@ function Tasks() {
                         </thead>
 
                         <tbody>
-                            {filteredTasks.map((task) => (
+                            {paginatedTasks.map((task) => (
                                 <tr key={task.id} className="border-t hover:bg-gray-50">
                                     <td className="px-6 py-4">{task.id}</td>
                                     <td className="px-6 py-4">{task.title}</td>
@@ -420,6 +448,46 @@ function Tasks() {
                             ))}
                         </tbody>
                     </table>
+                )}
+                {filteredTasks.length > 0 && totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+                        <p className="text-sm text-gray-600">
+                            Showing {(currentPage - 1) * tasksPerPage + 1} to{" "}
+                            {Math.min(currentPage * tasksPerPage, filteredTasks.length)} of{" "}
+                            {filteredTasks.length} tasks
+                        </p>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => goToPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 rounded-lg border bg-white text-sm disabled:opacity-50"
+                            >
+                                Prev
+                            </button>
+
+                            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                                <button
+                                    key={page}
+                                    onClick={() => goToPage(page)}
+                                    className={`px-3 py-1.5 rounded-lg text-sm border ${currentPage === page
+                                        ? "bg-blue-600 text-white border-blue-600"
+                                        : "bg-white text-gray-700"
+                                        }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => goToPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 rounded-lg border bg-white text-sm disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
