@@ -25,7 +25,8 @@ function Tasks() {
     const [showForm, setShowForm] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [taskForm, setTaskForm] = useState(getEmptyTask());
-    const [searchParams] = useSearchParams();
+
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const [searchText, setSearchText] = useState("");
     const [statusFilter, setStatusFilter] = useState(
@@ -46,6 +47,7 @@ function Tasks() {
         } catch (error) {
             console.error("Error loading tasks:", error);
             setTasks([]);
+            toast.error("Failed to load tasks.");
         } finally {
             setLoading(false);
         }
@@ -53,6 +55,9 @@ function Tasks() {
 
     useEffect(() => {
         loadTasks();
+    }, []);
+
+    useEffect(() => {
         setStatusFilter(searchParams.get("status") || "All");
         setPriorityFilter(searchParams.get("priority") || "All");
     }, [searchParams]);
@@ -60,6 +65,20 @@ function Tasks() {
     useEffect(() => {
         setCurrentPage(1);
     }, [searchText, statusFilter, priorityFilter]);
+
+    useEffect(() => {
+        const params = {};
+
+        if (statusFilter !== "All") {
+            params.status = statusFilter;
+        }
+
+        if (priorityFilter !== "All") {
+            params.priority = priorityFilter;
+        }
+
+        setSearchParams(params);
+    }, [statusFilter, priorityFilter, setSearchParams]);
 
     const resetForm = () => {
         setTaskForm(getEmptyTask());
@@ -113,8 +132,10 @@ function Tasks() {
 
             if (isEditMode) {
                 await updateTasks(taskForm);
+                toast.success("Task updated successfully.");
             } else {
                 await createTasks(taskForm);
+                toast.success("Task created successfully.");
             }
 
             await loadTasks();
@@ -128,12 +149,16 @@ function Tasks() {
     };
 
     const handleDelete = async (id) => {
-        const confirmDelete = window.confirm("Are you sure you want to delete this task?");
+        const confirmDelete = window.confirm(
+            "Are you sure you want to delete this task?"
+        );
+
         if (!confirmDelete) return;
 
         try {
             setActionLoading(true);
             await deleteTasks(id);
+            toast.success("Task deleted successfully.");
             await loadTasks();
         } catch (error) {
             console.error("Error deleting task:", error);
@@ -147,7 +172,9 @@ function Tasks() {
         return tasks.filter((task) => {
             const matchesSearch =
                 task.title?.toLowerCase().includes(searchText.toLowerCase()) ||
-                task.description?.toLowerCase().includes(searchText.toLowerCase());
+                task.description
+                    ?.toLowerCase()
+                    .includes(searchText.toLowerCase());
 
             const matchesStatus =
                 statusFilter === "All" || task.status === statusFilter;
@@ -215,55 +242,99 @@ function Tasks() {
         }
     };
 
+    const handleSummaryClick = (type) => {
+        if (type === "total") {
+            setStatusFilter("All");
+            return;
+        }
+
+        if (type === "pending") {
+            setStatusFilter("Pending");
+            return;
+        }
+
+        if (type === "inProgress") {
+            setStatusFilter("In Progress");
+            return;
+        }
+
+        if (type === "completed") {
+            setStatusFilter("Completed");
+        }
+    };
 
     if (loading) {
-        return <Loader text="Loading tasks..." />;
+        return <Loader />;
     }
 
     return (
-        <div className="p-6 relative">
-            {actionLoading && <Loader text="Processing..." />}
+        <div>
+            {actionLoading && <Loader />}
 
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Task List</h2>
+            <div className="flex items-center justify-between mb-8">
+                <h2 className="text-3xl font-bold text-gray-800">Task List</h2>
 
                 <button
                     onClick={handleAddClick}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow"
+                    disabled={actionLoading}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl shadow"
                 >
                     + Add Task
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-lg shadow p-4">
-                    <p className="text-sm text-gray-500">Total Tasks</p>
-                    <h3 className="text-2xl font-bold text-gray-800">{summary.total}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div
+                    onClick={() => handleSummaryClick("total")}
+                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
+                >
+                    <p className="text-gray-500 text-sm">Total Tasks</p>
+                    <h3 className="text-3xl font-bold text-gray-800 mt-1">
+                        {summary.total}
+                    </h3>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-4">
-                    <p className="text-sm text-gray-500">Pending</p>
-                    <h3 className="text-2xl font-bold text-yellow-600">{summary.pending}</h3>
+                <div
+                    onClick={() => handleSummaryClick("pending")}
+                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
+                >
+                    <p className="text-gray-500 text-sm">Pending</p>
+                    <h3 className="text-3xl font-bold text-yellow-600 mt-1">
+                        {summary.pending}
+                    </h3>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-4">
-                    <p className="text-sm text-gray-500">In Progress</p>
-                    <h3 className="text-2xl font-bold text-blue-600">{summary.inProgress}</h3>
+                <div
+                    onClick={() => handleSummaryClick("inProgress")}
+                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
+                >
+                    <p className="text-gray-500 text-sm">In Progress</p>
+                    <h3 className="text-3xl font-bold text-blue-600 mt-1">
+                        {summary.inProgress}
+                    </h3>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-4">
-                    <p className="text-sm text-gray-500">Completed</p>
-                    <h3 className="text-2xl font-bold text-green-600">{summary.completed}</h3>
+                <div
+                    onClick={() => handleSummaryClick("completed")}
+                    className="bg-white rounded-xl shadow p- cursor-pointer hover:shadow-md transition"
+                >
+                    <p className="text-gray-500 text-sm">Completed</p>
+                    <h3 className="text-3xl font-bold text-green-600 mt-1">
+                        {summary.completed}
+                    </h3>
                 </div>
             </div>
 
             {showForm && (
-                <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-                    <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                <div className="bg-white rounded-xl shadow p-6 mb-6">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-4">
                         {isEditMode ? "Edit Task" : "Add New Task"}
                     </h3>
 
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form
+                        onSubmit={handleSubmit}
+                        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                    >
                         <div>
                             <label className="block mb-2 text-sm font-medium text-gray-700">
                                 Title
@@ -273,8 +344,8 @@ function Tasks() {
                                 name="title"
                                 value={taskForm.title}
                                 onChange={handleInputChange}
-                                placeholder="Enter task title"
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Enter task title"
                             />
                         </div>
 
@@ -294,7 +365,7 @@ function Tasks() {
                             </select>
                         </div>
 
-                        <div>
+                        <div className="md:col-span-2">
                             <label className="block mb-2 text-sm font-medium text-gray-700">
                                 Description
                             </label>
@@ -302,9 +373,9 @@ function Tasks() {
                                 name="description"
                                 value={taskForm.description}
                                 onChange={handleInputChange}
-                                placeholder="Enter task description"
-                                rows="3"
+                                rows="4"
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Enter task description"
                             />
                         </div>
 
@@ -327,7 +398,8 @@ function Tasks() {
                         <div className="md:col-span-2 flex gap-3 mt-2">
                             <button
                                 type="submit"
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                                disabled={actionLoading}
+                                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg"
                             >
                                 {isEditMode ? "Update Task" : "Save Task"}
                             </button>
@@ -335,7 +407,8 @@ function Tasks() {
                             <button
                                 type="button"
                                 onClick={resetForm}
-                                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
+                                disabled={actionLoading}
+                                className="bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg"
                             >
                                 Cancel
                             </button>
@@ -344,7 +417,7 @@ function Tasks() {
                 </div>
             )}
 
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
+            <div className="bg-white rounded-xl shadow p-6 mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">
@@ -393,101 +466,146 @@ function Tasks() {
                 </div>
             </div>
 
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                {loading ? (
-                    <div className="p-6 text-gray-600">Loading tasks...</div>
-                ) : filteredTasks.length === 0 ? (
+            <div className="bg-white shadow-md rounded-xl overflow-hidden">
+                {filteredTasks.length === 0 ? (
                     <div className="p-6 text-gray-600">No tasks found.</div>
                 ) : (
-                    <table className="min-w-full">
-                        <thead className="bg-gray-100">
-                            <tr>
-                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">ID</th>
-                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Title</th>
-                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Description</th>
-                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Priority</th>
-                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
-                                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">Action</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {paginatedTasks.map((task) => (
-                                <tr key={task.id} className="border-t hover:bg-gray-50">
-                                    <td className="px-6 py-4">{task.id}</td>
-                                    <td className="px-6 py-4">{task.title}</td>
-                                    <td className="px-6 py-4">{task.description}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-3 py-1 text-sm rounded-full ${getPriorityClass(task.priority)}`}>
-                                            {task.priority}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-3 py-1 text-sm rounded-full ${getStatusClass(task.status)}`}>
-                                            {task.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handleEdit(task)}
-                                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-                                            >
-                                                Edit
-                                            </button>
-
-                                            <button
-                                                onClick={() => handleDelete(task.id)}
-                                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </td>
+                    <>
+                        <table className="min-w-full">
+                            <thead className="bg-gray-100">
+                                <tr>
+                                    <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                        ID
+                                    </th>
+                                    <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                        Title
+                                    </th>
+                                    <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                        Description
+                                    </th>
+                                    <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                        Priority
+                                    </th>
+                                    <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                        Status
+                                    </th>
+                                    <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                        Action
+                                    </th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-                {filteredTasks.length > 0 && totalPages > 1 && (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
-                        <p className="text-sm text-gray-600">
-                            Showing {(currentPage - 1) * tasksPerPage + 1} to{" "}
-                            {Math.min(currentPage * tasksPerPage, filteredTasks.length)} of{" "}
-                            {filteredTasks.length} tasks
-                        </p>
+                            </thead>
 
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => goToPage(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className="px-3 py-1.5 rounded-lg border bg-white text-sm disabled:opacity-50"
-                            >
-                                Prev
-                            </button>
+                            <tbody>
+                                {paginatedTasks.map((task) => (
+                                    <tr
+                                        key={task.id}
+                                        className="border-t hover:bg-gray-50"
+                                    >
+                                        <td className="px-6 py-5">{task.id}</td>
+                                        <td className="px-6 py-5">
+                                            {task.title}
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            {task.description}
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <span
+                                                className={`px-3 py-1 text-sm rounded-full ${getPriorityClass(
+                                                    task.priority
+                                                )}`}
+                                            >
+                                                {task.priority}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <span
+                                                className={`px-3 py-1 text-sm rounded-full ${getStatusClass(
+                                                    task.status
+                                                )}`}
+                                            >
+                                                {task.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() =>
+                                                        handleEdit(task)
+                                                    }
+                                                    disabled={actionLoading}
+                                                    className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-3 py-1 rounded"
+                                                >
+                                                    Edit
+                                                </button>
 
-                            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                                <button
-                                    key={page}
-                                    onClick={() => goToPage(page)}
-                                    className={`px-3 py-1.5 rounded-lg text-sm border ${currentPage === page
-                                        ? "bg-blue-600 text-white border-blue-600"
-                                        : "bg-white text-gray-700"
-                                        }`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
+                                                <button
+                                                    onClick={() =>
+                                                        handleDelete(task.id)
+                                                    }
+                                                    disabled={actionLoading}
+                                                    className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-3 py-1 rounded"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
 
-                            <button
-                                onClick={() => goToPage(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className="px-3 py-1.5 rounded-lg border bg-white text-sm disabled:opacity-50"
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
+                        {totalPages > 1 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-6 py-4 border-t">
+                                <p className="text-sm text-gray-600">
+                                    Showing {(currentPage - 1) * tasksPerPage + 1}{" "}
+                                    to{" "}
+                                    {Math.min(
+                                        currentPage * tasksPerPage,
+                                        filteredTasks.length
+                                    )}{" "}
+                                    of {filteredTasks.length} tasks
+                                </p>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() =>
+                                            goToPage(currentPage - 1)
+                                        }
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-1.5 rounded-lg border bg-white text-sm disabled:opacity-50"
+                                    >
+                                        Prev
+                                    </button>
+
+                                    {Array.from(
+                                        { length: totalPages },
+                                        (_, index) => index + 1
+                                    ).map((page) => (
+                                        <button
+                                            key={page}
+                                            onClick={() => goToPage(page)}
+                                            className={`px-3 py-1.5 rounded-lg text-sm border ${currentPage === page
+                                                    ? "bg-blue-600 text-white border-blue-600"
+                                                    : "bg-white text-gray-700"
+                                                }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+
+                                    <button
+                                        onClick={() =>
+                                            goToPage(currentPage + 1)
+                                        }
+                                        disabled={currentPage === totalPages}
+                                        className="px-3 py-1.5 rounded-lg border bg-white text-sm disabled:opacity-50"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

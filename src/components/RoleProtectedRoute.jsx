@@ -9,7 +9,7 @@ function RoleProtectedRoute({ children, role }) {
     }
 
     if (role && userRole !== role.toLowerCase()) {
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to="/" replace />;
     }
 
     return children;
