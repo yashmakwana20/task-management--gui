@@ -1,22 +1,36 @@
 import { jwtDecode } from "jwt-decode";
 
-export function getUserRole() {
+function getDecodedToken() {
     const token = localStorage.getItem("token");
 
     if (!token) return null;
 
     try {
-        const decoded = jwtDecode(token);
-
-        const role =
-            decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-
-        console.log("Decoded role:", role);
-        console.log("User role:", role ? role.toLowerCase() : null);
-
-        return role ? role.toLowerCase() : null;
+        return jwtDecode(token);
     } catch (error) {
         console.error("Invalid token:", error);
         return null;
     }
+}
+
+export function getUserRole() {
+    const decoded = getDecodedToken();
+
+    if (!decoded) return null;
+
+    const role =
+        decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+
+    return role ? role.toLowerCase() : null;
+}
+
+export function getUserId() {
+    const decoded = getDecodedToken();
+
+    if (!decoded) return null;
+
+    const userId =
+        decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+
+    return userId ? Number(userId) : null;
 }

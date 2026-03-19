@@ -8,8 +8,11 @@ import {
 import Loader from "../components/Loader";
 import toast from "react-hot-toast";
 import { useSearchParams } from "react-router-dom";
+import { getUserRole } from "../utils/auth";
 
 function Tasks() {
+    const userRole = getUserRole();
+
     const getEmptyTask = () => ({
         id: 0,
         title: "",
@@ -274,13 +277,13 @@ function Tasks() {
             <div className="flex items-center justify-between mb-8">
                 <h2 className="text-3xl font-bold text-gray-800">Task List</h2>
 
-                <button
+                {userRole === "admin" && (<button
                     onClick={handleAddClick}
                     disabled={actionLoading}
                     className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl shadow"
                 >
                     + Add Task
-                </button>
+                </button>)}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -316,7 +319,7 @@ function Tasks() {
 
                 <div
                     onClick={() => handleSummaryClick("completed")}
-                    className="bg-white rounded-xl shadow p- cursor-pointer hover:shadow-md transition"
+                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
                 >
                     <p className="text-gray-500 text-sm">Completed</p>
                     <h3 className="text-3xl font-bold text-green-600 mt-1">
@@ -489,9 +492,9 @@ function Tasks() {
                                     <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
                                         Status
                                     </th>
-                                    <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                    {userRole === "admin" && (<th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
                                         Action
-                                    </th>
+                                    </th>)}
                                 </tr>
                             </thead>
 
@@ -526,29 +529,30 @@ function Tasks() {
                                                 {task.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() =>
-                                                        handleEdit(task)
-                                                    }
-                                                    disabled={actionLoading}
-                                                    className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-3 py-1 rounded"
-                                                >
-                                                    Edit
-                                                </button>
+                                        {userRole === "admin" && (
+                                            <td className="px-6 py-5">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() =>
+                                                            handleEdit(task)
+                                                        }
+                                                        disabled={actionLoading}
+                                                        className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-3 py-1 rounded"
+                                                    >
+                                                        Edit
+                                                    </button>
 
-                                                <button
-                                                    onClick={() =>
-                                                        handleDelete(task.id)
-                                                    }
-                                                    disabled={actionLoading}
-                                                    className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-3 py-1 rounded"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </td>
+                                                    <button
+                                                        onClick={() =>
+                                                            handleDelete(task.id)
+                                                        }
+                                                        disabled={actionLoading}
+                                                        className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-3 py-1 rounded"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </td>)}
                                     </tr>
                                 ))}
                             </tbody>
@@ -585,8 +589,8 @@ function Tasks() {
                                             key={page}
                                             onClick={() => goToPage(page)}
                                             className={`px-3 py-1.5 rounded-lg text-sm border ${currentPage === page
-                                                    ? "bg-blue-600 text-white border-blue-600"
-                                                    : "bg-white text-gray-700"
+                                                ? "bg-blue-600 text-white border-blue-600"
+                                                : "bg-white text-gray-700"
                                                 }`}
                                         >
                                             {page}
