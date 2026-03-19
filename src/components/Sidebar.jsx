@@ -1,35 +1,38 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { getUserRole } from "../utils/auth";
 
 const Sidebar = () => {
     const userRole = getUserRole();
 
+    const navClass = ({ isActive }) =>
+        `block rounded-xl px-4 py-3 text-base font-medium transition ${isActive
+            ? "bg-blue-600 text-white shadow"
+            : "text-gray-200 hover:bg-white/10 hover:text-white"
+        }`;
+
     return (
-        <div className="w-60 bg-gray-900 text-white min-h-screen p-4">
-            <h2 className="text-lg font-bold mb-6">Menu</h2>
+        <aside className="w-64 bg-slate-950 text-white min-h-screen px-4 py-6 shadow-lg">
+            <div className="mb-8 px-2">
+                <h2 className="text-3xl font-bold tracking-tight">Menu</h2>
+                <p className="text-sm text-slate-400 mt-1">Task Management</p>
+            </div>
 
-            <ul className="space-y-3">
-                <li>
-                    <Link to="/dashboard" className="hover:text-gray-300">
-                        Dashboard
-                    </Link>
-                </li>
+            <nav className="space-y-2">
+                <NavLink to="/dashboard" className={navClass}>
+                    Dashboard
+                </NavLink>
 
-                <li>
-                    <Link to="/tasks" className="hover:text-gray-300">
-                        Tasks
-                    </Link>
-                </li>
+                <NavLink to="/tasks" className={navClass}>
+                    Tasks
+                </NavLink>
 
                 {userRole === "admin" && (
-                    <li>
-                        <Link to="/admin" className="hover:text-gray-300">
-                            Admin
-                        </Link>
-                    </li>
+                    <NavLink to="/admin" className={navClass}>
+                        Admin
+                    </NavLink>
                 )}
-            </ul>
-        </div>
+            </nav>
+        </aside>
     );
 };
 
