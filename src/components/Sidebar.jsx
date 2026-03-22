@@ -34,6 +34,12 @@ const Sidebar = () => {
                         User Dashboard
                     </NavLink>
                 )}
+
+                {userRole === "admin" && (
+                    <NavLink to="/assign-tasks" className={navClass}>
+                        Assign Tasks
+                    </NavLink>
+                )}
             </nav>
         </div>
     );

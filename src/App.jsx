@@ -9,6 +9,7 @@ import Tasks from "./pages/Tasks";
 import Layout from "./components/Layout";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
+import AssignTasks from "./pages/AssignTasks";
 
 function App() {
     return (
@@ -61,6 +62,14 @@ function App() {
                     />
 
                     <Route path="/tasks" element={<Tasks />} />
+                    <Route
+                        path="/assign-tasks"
+                        element={
+                            <RoleProtectedRoute role="admin">
+                                <AssignTasks />
+                            </RoleProtectedRoute>
+                        }
+                    />
                 </Route>
             </Routes>
         </BrowserRouter>

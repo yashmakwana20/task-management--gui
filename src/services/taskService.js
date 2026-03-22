@@ -15,3 +15,8 @@ export const updateTasks = (task) => {
 export const deleteTasks = (id) => {
     return api.delete(`/CLTaskItem?Id=${id}`);
 };
+
+export const assignTask = async (taskData) => {
+    const response = await api.put("/CLTaskItem/AssignTasks", taskData);
+    return response.data;
+};
