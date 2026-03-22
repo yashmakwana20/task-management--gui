@@ -70,14 +70,14 @@ function Register() {
     return (
         <AuthLayout
             title="Create Account"
-            subtitle="Register to start using the task management system."
+            subtitle="Register to start using your task management system."
             footerText="Already have an account?"
             footerLinkText="Login"
             footerLinkTo="/"
         >
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                         Name
                     </label>
                     <input
@@ -86,13 +86,12 @@ function Register() {
                         value={formData.name}
                         onChange={handleChange}
                         placeholder="Enter your name"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
-                        required
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
                 <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                         Email
                     </label>
                     <input
@@ -101,13 +100,12 @@ function Register() {
                         value={formData.email}
                         onChange={handleChange}
                         placeholder="Enter your email"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
-                        required
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
                 <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                         Password
                     </label>
                     <input
@@ -115,14 +113,13 @@ function Register() {
                         name="password"
                         value={formData.password}
                         onChange={handleChange}
-                        placeholder="Enter password"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
-                        required
+                        placeholder="Enter your password"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
                 <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                         Confirm Password
                     </label>
                     <input
@@ -130,16 +127,15 @@ function Register() {
                         name="confirmPassword"
                         value={formData.confirmPassword}
                         onChange={handleChange}
-                        placeholder="Confirm password"
-                        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
-                        required
+                        placeholder="Confirm your password"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-70"
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 rounded-lg transition"
                 >
                     {loading ? "Registering..." : "Register"}
                 </button>

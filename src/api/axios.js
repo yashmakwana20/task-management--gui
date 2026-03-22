@@ -1,60 +1,78 @@
 import axios from "axios";
 
+const BASE_URL = "http://localhost/TaskManagementAPI/api";
+
 const api = axios.create({
-    baseURL: "http://localhost/TaskManagementAPI/api"
+    baseURL: BASE_URL,
 });
 
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-});
-
+// Attach access token to every request
 api.interceptors.request.use(
-    response => response,
-    async error => {
+    (config) => {
+        const token = localStorage.getItem("token");
+
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// Refresh token on 401 and retry original request
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
         const originalRequest = error.config;
 
-        if (error.response.status === 401 && !originalRequest._retry) {
+        if (!error.response) {
+            return Promise.reject(error);
+        }
+
+        if (
+            error.response.status === 401 &&
+            !originalRequest._retry &&
+            !originalRequest.url?.includes("/Auth/refresh")
+        ) {
             originalRequest._retry = true;
 
             try {
+                const accessToken = localStorage.getItem("token");
                 const refreshToken = localStorage.getItem("refreshToken");
 
-                const response = await axios.post("http://localhost/TaskManagementAPI/api/Auth/Refresh", { refreshToken });
+                if (!refreshToken) {
+                    throw new Error("Refresh token not found");
+                }
 
-                const newAccessToken = response.data.accessToken;
+                const refreshResponse = await axios.post(
+                    `${BASE_URL}/Auth/refresh`,
+                    {
+                        accessToken,
+                        refreshToken,
+                    }
+                );
+
+                const newAccessToken = refreshResponse.data.accessToken;
+                const newRefreshToken =
+                    refreshResponse.data.refreshToken || refreshToken;
 
                 localStorage.setItem("token", newAccessToken);
+                localStorage.setItem("refreshToken", newRefreshToken);
 
                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
                 return api(originalRequest);
-
-            } catch {
+            } catch (refreshError) {
                 localStorage.removeItem("token");
                 localStorage.removeItem("refreshToken");
-
                 window.location.href = "/";
+                return Promise.reject(refreshError);
             }
         }
+
         return Promise.reject(error);
     }
 );
-
-//api.interceptors.response.use(
-//    (response) => response,
-//    (error) => {
-//        if (error.response && error.response.status === 401) {
-//            localStorage.removeItem("token");
-//            window.location.href = "/";
-//        }
-
-//        return Promise.reject(error);
-//    }
-//);
 
 export default api;
