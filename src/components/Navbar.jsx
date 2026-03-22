@@ -1,14 +1,14 @@
 import { useNavigate } from "react-router-dom";
+import { clearAuthTokens } from "../utils/auth";
 import toast from "react-hot-toast";
 
 const Navbar = () => {
     const navigate = useNavigate();
 
     const logOut = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
+        clearAuthTokens();
         toast.success("Logged out successfully");
-        navigate("/");
+        navigate("/", { replace: true });
     };
 
     return (

@@ -2,7 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { login } from "../services/authService";
-import { getUserRole } from "../utils/auth";
+import {
+    getUserRole,
+    saveAuthTokens,
+    getDefaultRouteByRole,
+} from "../utils/auth";
 import AuthLayout from "../components/AuthLayout";
 
 function Login() {
@@ -40,17 +44,15 @@ function Login() {
             const data = await login(email, password);
 
             if (!data.isError) {
-                localStorage.setItem("token", data.accessToken);
-                localStorage.setItem("refreshToken", data.refreshToken);
+                saveAuthTokens(data.accessToken, data.refreshToken);
 
                 const role = getUserRole();
-
                 toast.success("Login successful!");
 
-                if (role === "admin") {
-                    navigate("/admin");
+                if (role) {
+                    navigate(getDefaultRouteByRole());
                 } else {
-                    navigate("/user");
+                    navigate("/");
                 }
             } else {
                 toast.error(data.message || "Login failed");

@@ -8,18 +8,31 @@ import UserDashboard from "./pages/UserDashboard";
 import Tasks from "./pages/Tasks";
 import Layout from "./components/Layout";
 import RoleProtectedRoute from "./components/RoleProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 
 function App() {
     return (
         <BrowserRouter>
-            <Toaster position="bottom-center" reverseOrder={false} />
-
+            <Toaster position="bottom-center" />
             <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                <Route
+                    path="/"
+                    element={
+                        <PublicRoute>
+                            <Login />
+                        </PublicRoute>
+                    }
+                />
 
-                {/* Protected Routes */}
+                <Route
+                    path="/register"
+                    element={
+                        <PublicRoute>
+                            <Register />
+                        </PublicRoute>
+                    }
+                />
+
                 <Route
                     element={
                         <RoleProtectedRoute>
@@ -28,19 +41,26 @@ function App() {
                     }
                 >
                     <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/tasks" element={<Tasks />} />
-                    <Route path="/user" element={<UserDashboard />} />
-                </Route>
 
-                <Route
-                    path="/admin"
-                    element={
-                        <RoleProtectedRoute role="admin">
-                            <Layout />
-                        </RoleProtectedRoute>
-                    }
-                >
-                    <Route index element={<AdminDashboard />} />
+                    <Route
+                        path="/admin"
+                        element={
+                            <RoleProtectedRoute role="admin">
+                                <AdminDashboard />
+                            </RoleProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/user"
+                        element={
+                            <RoleProtectedRoute role="user">
+                                <UserDashboard />
+                            </RoleProtectedRoute>
+                        }
+                    />
+
+                    <Route path="/tasks" element={<Tasks />} />
                 </Route>
             </Routes>
         </BrowserRouter>
