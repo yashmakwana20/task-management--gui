@@ -14,15 +14,41 @@ function Login() {
         email: "",
         password: "",
     });
+
+    const [errors, setErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
 
+    const validateForm = () => {
+        const newErrors = {};
+
+        if (!formData.email.trim()) {
+            newErrors.email = "Email is required.";
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = "Enter a valid email address.";
+        }
+
+        if (!formData.password.trim()) {
+            newErrors.password = "Password is required.";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
+
         setFormData((prev) => ({
             ...prev,
             [name]: value,
+        }));
+
+        setErrors((prev) => ({
+            ...prev,
+            [name]: "",
         }));
     };
 
@@ -30,18 +56,15 @@ function Login() {
         e.preventDefault();
         if (loading) return;
 
-        const email = formData.email.trim();
-        const password = formData.password.trim();
-
-        if (!email || !password) {
-            toast.error("Please enter email and password.");
-            return;
-        }
+        if (!validateForm()) return;
 
         try {
             setLoading(true);
 
-            const data = await login(email, password);
+            const data = await login(
+                formData.email.trim(),
+                formData.password.trim()
+            );
 
             if (!data.isError) {
                 saveAuthTokens(data.accessToken, data.refreshToken);
@@ -84,22 +107,45 @@ function Login() {
                         value={formData.email}
                         onChange={handleChange}
                         placeholder="Enter your email"
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 ${errors.email
+                                ? "border-red-500 focus:ring-red-400"
+                                : "border-gray-300 focus:ring-blue-500"
+                            }`}
                     />
+                    {errors.email && (
+                        <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                    )}
                 </div>
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Password
                     </label>
-                    <input
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        placeholder="Enter your password"
-                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+
+                    <div className="relative">
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="Enter your password"
+                            className={`w-full border rounded-lg px-4 py-3 pr-20 focus:outline-none focus:ring-2 ${errors.password
+                                    ? "border-red-500 focus:ring-red-400"
+                                    : "border-gray-300 focus:ring-blue-500"
+                                }`}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-blue-600 font-medium"
+                        >
+                            {showPassword ? "Hide" : "Show"}
+                        </button>
+                    </div>
+
+                    {errors.password && (
+                        <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                    )}
                 </div>
 
                 <button

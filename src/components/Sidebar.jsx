@@ -11,11 +11,8 @@ const Sidebar = () => {
         }`;
 
     return (
-        <aside className="w-64 bg-slate-950 text-white min-h-screen px-4 py-6 shadow-lg">
-            <div className="mb-8 px-2">
-                <h2 className="text-3xl font-bold tracking-tight">Menu</h2>
-                <p className="text-sm text-slate-400 mt-1">Task Management</p>
-            </div>
+        <div className="h-full p-4">
+            <h2 className="text-xl font-bold mb-6">Task Management</h2>
 
             <nav className="space-y-2">
                 <NavLink to="/dashboard" className={navClass}>
@@ -38,7 +35,7 @@ const Sidebar = () => {
                     </NavLink>
                 )}
             </nav>
-        </aside>
+        </div>
     );
 };
 
