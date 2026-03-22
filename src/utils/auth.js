@@ -15,7 +15,7 @@ function getDecodedToken() {
 
 export function getUserRole() {
     const decoded = getDecodedToken();
-
+    console.log(decoded);
     if (!decoded) return null;
 
     const role =

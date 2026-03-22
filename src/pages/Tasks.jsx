@@ -8,10 +8,11 @@ import {
 import Loader from "../components/Loader";
 import toast from "react-hot-toast";
 import { useSearchParams } from "react-router-dom";
-import { getUserRole } from "../utils/auth";
+import { getUserRole, getUserId } from "../utils/auth";
 
 function Tasks() {
     const userRole = getUserRole();
+    const userId = getUserId();
 
     const getEmptyTask = () => ({
         id: 0,
@@ -45,7 +46,7 @@ function Tasks() {
     const loadTasks = async () => {
         try {
             setLoading(true);
-            const res = await getTasks();
+            const res = await getTasks(userRole == "admin" ? 0 : userId);
             setTasks(res.data.data || []);
         } catch (error) {
             console.error("Error loading tasks:", error);

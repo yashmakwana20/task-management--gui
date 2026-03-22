@@ -11,7 +11,7 @@ function AdminDashboard() {
     const loadTasks = async () => {
         try {
             setLoading(true);
-            const res = await getTasks();
+            const res = await getTasks(0);
             setTasks(res?.data?.data || []);
         } catch (error) {
             console.error("Error loading admin dashboard data:", error);

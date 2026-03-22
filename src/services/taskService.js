@@ -1,7 +1,7 @@
 import api from "../api/axios";
 
-export const getTasks = () => {
-    return api.get("/CLTaskItem/GetTaskData");
+export const getTasks = (id) => {
+    return api.get("/CLTaskItem/GetTaskData?userId=" + id);
 };
 
 export const createTasks = (task) => {

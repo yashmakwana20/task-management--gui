@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTasks } from "../services/taskService";
+import { getUserRole, getUserId } from "../utils/auth";
 import Loader from "../components/Loader";
 
 function Dashboard() {
@@ -8,10 +9,13 @@ function Dashboard() {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    const userId = getUserId();
+    const userRole = getUserRole();
+
     const loadTasks = async () => {
         try {
             setLoading(true);
-            const res = await getTasks();
+            const res = await getTasks(userRole == "admin" ? 0 : userId);
             setTasks(res.data.data || []);
         } catch (error) {
             console.error("Error loading dashboard tasks:", error);

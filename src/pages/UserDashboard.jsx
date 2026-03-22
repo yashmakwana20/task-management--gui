@@ -14,7 +14,7 @@ function UserDashboard() {
     const loadTasks = async () => {
         try {
             setLoading(true);
-            const res = await getTasks();
+            const res = await getTasks(userId);
             const allTasks = res?.data?.data || [];
 
             const userTasks = allTasks.filter(
