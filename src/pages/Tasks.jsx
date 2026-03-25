@@ -5,10 +5,12 @@ import {
     createTasks,
     updateTasks,
 } from "../services/taskService";
+import { getUsers } from "../services/userService";
 import Loader from "../components/Loader";
 import toast from "react-hot-toast";
 import { useSearchParams } from "react-router-dom";
 import { getUserRole, getUserId } from "../utils/auth";
+import StatCard from "../components/StatCard";
 
 function Tasks() {
     const userRole = getUserRole();
@@ -24,6 +26,7 @@ function Tasks() {
     });
 
     const [tasks, setTasks] = useState([]);
+    const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
     const [showForm, setShowForm] = useState(false);
@@ -31,7 +34,6 @@ function Tasks() {
     const [taskForm, setTaskForm] = useState(getEmptyTask());
 
     const [searchParams, setSearchParams] = useSearchParams();
-
     const [searchText, setSearchText] = useState("");
     const [statusFilter, setStatusFilter] = useState(
         searchParams.get("status") || "All"
@@ -39,18 +41,35 @@ function Tasks() {
     const [priorityFilter, setPriorityFilter] = useState(
         searchParams.get("priority") || "All"
     );
+    const [assignedUserFilter, setAssignedUserFilter] = useState(
+        searchParams.get("assignedUser") || "All"
+    );
 
     const [currentPage, setCurrentPage] = useState(1);
     const tasksPerPage = 5;
 
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [taskToDelete, setTaskToDelete] = useState(null);
+
     const loadTasks = async () => {
         try {
             setLoading(true);
-            const res = await getTasks(userRole == "admin" ? 0 : userId);
-            setTasks(res.data.data || []);
+
+            const [taskRes, userRes] = await Promise.all([
+                getTasks(userRole === "admin" ? 0 : userId),
+                userRole === "admin" ? getUsers() : Promise.resolve(null),
+            ]);
+
+            setTasks(taskRes.data.data || []);
+
+            if (userRole === "admin") {
+                const userList = Array.isArray(userRes?.data) ? userRes.data : [];
+                setUsers(userList);
+            }
         } catch (error) {
             console.error("Error loading tasks:", error);
             setTasks([]);
+            setUsers([]);
             toast.error("Failed to load tasks.");
         } finally {
             setLoading(false);
@@ -64,11 +83,12 @@ function Tasks() {
     useEffect(() => {
         setStatusFilter(searchParams.get("status") || "All");
         setPriorityFilter(searchParams.get("priority") || "All");
+        setAssignedUserFilter(searchParams.get("assignedUser") || "All");
     }, [searchParams]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchText, statusFilter, priorityFilter]);
+    }, [searchText, statusFilter, priorityFilter, assignedUserFilter]);
 
     useEffect(() => {
         const params = {};
@@ -81,8 +101,18 @@ function Tasks() {
             params.priority = priorityFilter;
         }
 
+        if (userRole === "admin" && assignedUserFilter !== "All") {
+            params.assignedUser = assignedUserFilter;
+        }
+
         setSearchParams(params);
-    }, [statusFilter, priorityFilter, setSearchParams]);
+    }, [
+        statusFilter,
+        priorityFilter,
+        assignedUserFilter,
+        userRole,
+        setSearchParams,
+    ]);
 
     const resetForm = () => {
         setTaskForm(getEmptyTask());
@@ -152,18 +182,25 @@ function Tasks() {
         }
     };
 
-    const handleDelete = async (id) => {
-        const confirmDelete = window.confirm(
-            "Are you sure you want to delete this task?"
-        );
+    const handleDeleteClick = (task) => {
+        setTaskToDelete(task);
+        setDeleteModalOpen(true);
+    };
 
-        if (!confirmDelete) return;
+    const closeDeleteModal = () => {
+        setDeleteModalOpen(false);
+        setTaskToDelete(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!taskToDelete?.id) return;
 
         try {
             setActionLoading(true);
-            await deleteTasks(id);
+            await deleteTasks(taskToDelete.id);
             toast.success("Task deleted successfully.");
             await loadTasks();
+            closeDeleteModal();
         } catch (error) {
             console.error("Error deleting task:", error);
             toast.error("Something went wrong while deleting the task.");
@@ -172,13 +209,19 @@ function Tasks() {
         }
     };
 
+    const userMap = useMemo(() => {
+        const map = {};
+        users.forEach((user) => {
+            map[user.id] = user.name || user.fullName || user.email || `User ${user.id}`;
+        });
+        return map;
+    }, [users]);
+
     const filteredTasks = useMemo(() => {
         return tasks.filter((task) => {
             const matchesSearch =
                 task.title?.toLowerCase().includes(searchText.toLowerCase()) ||
-                task.description
-                    ?.toLowerCase()
-                    .includes(searchText.toLowerCase());
+                task.description?.toLowerCase().includes(searchText.toLowerCase());
 
             const matchesStatus =
                 statusFilter === "All" || task.status === statusFilter;
@@ -186,9 +229,34 @@ function Tasks() {
             const matchesPriority =
                 priorityFilter === "All" || task.priority === priorityFilter;
 
-            return matchesSearch && matchesStatus && matchesPriority;
+            let matchesAssignedUser = true;
+
+            if (userRole === "admin") {
+                if (assignedUserFilter === "Unassigned") {
+                    matchesAssignedUser = !task.userId;
+                } else if (assignedUserFilter === "All") {
+                    matchesAssignedUser = true;
+                } else {
+                    matchesAssignedUser =
+                        String(task.userId || "") === String(assignedUserFilter);
+                }
+            }
+
+            return (
+                matchesSearch &&
+                matchesStatus &&
+                matchesPriority &&
+                matchesAssignedUser
+            );
         });
-    }, [tasks, searchText, statusFilter, priorityFilter]);
+    }, [
+        tasks,
+        searchText,
+        statusFilter,
+        priorityFilter,
+        assignedUserFilter,
+        userRole,
+    ]);
 
     const summary = useMemo(() => {
         return {
@@ -214,7 +282,6 @@ function Tasks() {
 
     useEffect(() => {
         const total = Math.ceil(filteredTasks.length / tasksPerPage) || 1;
-
         if (currentPage > total) {
             setCurrentPage(total);
         }
@@ -267,6 +334,25 @@ function Tasks() {
         }
     };
 
+    const handleResetFilters = () => {
+        setSearchText("");
+        setStatusFilter("All");
+        setPriorityFilter("All");
+
+        if (userRole === "admin") {
+            setAssignedUserFilter("All");
+        }
+
+        setCurrentPage(1);
+        setSearchParams({});
+    };
+
+    const hasActiveFilters =
+        searchText.trim() !== "" ||
+        statusFilter !== "All" ||
+        priorityFilter !== "All" ||
+        (userRole === "admin" && assignedUserFilter !== "All");
+
     if (loading) {
         return <Loader />;
     }
@@ -275,63 +361,56 @@ function Tasks() {
         <div>
             {actionLoading && <Loader />}
 
-            <div className="flex items-center justify-between mb-8">
-                <h2 className="text-3xl font-bold text-gray-800">Task List</h2>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+                <h1 className="text-3xl font-bold text-gray-800">Task List</h1>
 
-                {userRole === "admin" && (<button
-                    onClick={handleAddClick}
-                    disabled={actionLoading}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl shadow"
-                >
-                    + Add Task
-                </button>)}
+                {userRole === "admin" && (
+                    <button
+                        onClick={handleAddClick}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow"
+                    >
+                        + Add Task
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div
+                <StatCard
+                    title="Total Tasks"
+                    value={summary.total}
+                    valueClassName="text-gray-800"
                     onClick={() => handleSummaryClick("total")}
-                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
-                >
-                    <p className="text-gray-500 text-sm">Total Tasks</p>
-                    <h3 className="text-3xl font-bold text-gray-800 mt-1">
-                        {summary.total}
-                    </h3>
-                </div>
+                    clickable
+                />
 
-                <div
+                <StatCard
+                    title="Pending"
+                    value={summary.pending}
+                    valueClassName="text-yellow-600"
                     onClick={() => handleSummaryClick("pending")}
-                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
-                >
-                    <p className="text-gray-500 text-sm">Pending</p>
-                    <h3 className="text-3xl font-bold text-yellow-600 mt-1">
-                        {summary.pending}
-                    </h3>
-                </div>
+                    clickable
+                />
 
-                <div
+                <StatCard
+                    title="In Progress"
+                    value={summary.inProgress}
+                    valueClassName="text-blue-600"
                     onClick={() => handleSummaryClick("inProgress")}
-                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
-                >
-                    <p className="text-gray-500 text-sm">In Progress</p>
-                    <h3 className="text-3xl font-bold text-blue-600 mt-1">
-                        {summary.inProgress}
-                    </h3>
-                </div>
+                    clickable
+                />
 
-                <div
+                <StatCard
+                    title="Completed"
+                    value={summary.completed}
+                    valueClassName="text-green-600"
                     onClick={() => handleSummaryClick("completed")}
-                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
-                >
-                    <p className="text-gray-500 text-sm">Completed</p>
-                    <h3 className="text-3xl font-bold text-green-600 mt-1">
-                        {summary.completed}
-                    </h3>
-                </div>
+                    clickable
+                />
             </div>
 
             {showForm && (
-                <div className="bg-white rounded-xl shadow p-6 mb-6">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                <div className="bg-white rounded-xl shadow p-6 mb-8">
+                    <h3 className="text-xl font-semibold mb-4 text-gray-800">
                         {isEditMode ? "Edit Task" : "Add New Task"}
                     </h3>
 
@@ -349,7 +428,6 @@ function Tasks() {
                                 value={taskForm.title}
                                 onChange={handleInputChange}
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Enter task title"
                             />
                         </div>
 
@@ -379,7 +457,6 @@ function Tasks() {
                                 onChange={handleInputChange}
                                 rows="4"
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Enter task description"
                             />
                         </div>
 
@@ -422,7 +499,29 @@ function Tasks() {
             )}
 
             <div className="bg-white rounded-xl shadow p-6 mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-800">Filters</h3>
+                        <p className="text-sm text-gray-500">
+                            Narrow down tasks using search and filter options.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={handleResetFilters}
+                        disabled={!hasActiveFilters}
+                        className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Reset Filters
+                    </button>
+                </div>
+
+                <div
+                    className={`grid grid-cols-1 gap-4 ${userRole === "admin"
+                        ? "md:grid-cols-2 xl:grid-cols-4"
+                        : "md:grid-cols-3"
+                        }`}
+                >
                     <div>
                         <label className="block mb-2 text-sm font-medium text-gray-700">
                             Search
@@ -467,6 +566,30 @@ function Tasks() {
                             <option value="High">High</option>
                         </select>
                     </div>
+
+                    {userRole === "admin" && (
+                        <div>
+                            <label className="block mb-2 text-sm font-medium text-gray-700">
+                                Filter by Assigned User
+                            </label>
+                            <select
+                                value={assignedUserFilter}
+                                onChange={(e) => setAssignedUserFilter(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="All">All Users</option>
+                                <option value="Unassigned">Unassigned</option>
+                                {users.map((user) => (
+                                    <option key={user.id} value={user.id}>
+                                        {user.name ||
+                                            user.fullName ||
+                                            user.email ||
+                                            `User ${user.id}`}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -493,25 +616,25 @@ function Tasks() {
                                     <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
                                         Status
                                     </th>
-                                    {userRole === "admin" && (<th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
-                                        Action
-                                    </th>)}
+                                    {userRole === "admin" && (
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                            Assigned To
+                                        </th>
+                                    )}
+                                    {userRole === "admin" && (
+                                        <th className="text-left px-6 py-3 text-sm font-semibold text-gray-700">
+                                            Action
+                                        </th>
+                                    )}
                                 </tr>
                             </thead>
 
                             <tbody>
                                 {paginatedTasks.map((task) => (
-                                    <tr
-                                        key={task.id}
-                                        className="border-t hover:bg-gray-50"
-                                    >
+                                    <tr key={task.id} className="border-t hover:bg-gray-50">
                                         <td className="px-6 py-5">{task.id}</td>
-                                        <td className="px-6 py-5">
-                                            {task.title}
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            {task.description}
-                                        </td>
+                                        <td className="px-6 py-5">{task.title}</td>
+                                        <td className="px-6 py-5">{task.description}</td>
                                         <td className="px-6 py-5">
                                             <span
                                                 className={`px-3 py-1 text-sm rounded-full ${getPriorityClass(
@@ -530,52 +653,100 @@ function Tasks() {
                                                 {task.status}
                                             </span>
                                         </td>
+
+                                        {userRole === "admin" && (
+                                            <td className="px-6 py-5">
+                                                {task.userId ? (
+                                                    <span className="px-3 py-1 text-sm rounded-full bg-green-100 text-green-700">
+                                                        {userMap[task.userId] || `User ${task.userId}`}
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-3 py-1 text-sm rounded-full bg-orange-100 text-orange-700">
+                                                        Unassigned
+                                                    </span>
+                                                )}
+                                            </td>
+                                        )}
+
                                         {userRole === "admin" && (
                                             <td className="px-6 py-5">
                                                 <div className="flex gap-2">
                                                     <button
-                                                        onClick={() =>
-                                                            handleEdit(task)
-                                                        }
+                                                        onClick={() => handleEdit(task)}
                                                         disabled={actionLoading}
                                                         className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-3 py-1 rounded"
                                                     >
                                                         Edit
                                                     </button>
-
                                                     <button
-                                                        onClick={() =>
-                                                            handleDelete(task.id)
-                                                        }
+                                                        onClick={() => handleDeleteClick(task)}
                                                         disabled={actionLoading}
                                                         className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-3 py-1 rounded"
                                                     >
                                                         Delete
                                                     </button>
                                                 </div>
-                                            </td>)}
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
 
+                        {deleteModalOpen && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                                <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                                    <h2 className="text-xl font-bold text-gray-800">
+                                        Delete Task
+                                    </h2>
+
+                                    <p className="mt-3 text-sm text-gray-600">
+                                        Are you sure you want to delete this task?
+                                    </p>
+
+                                    <div className="mt-3 rounded-lg bg-gray-50 border border-gray-200 p-3">
+                                        <p className="text-sm text-gray-500">Task Title</p>
+                                        <p className="font-semibold text-gray-800 mt-1">
+                                            {taskToDelete?.title || "-"}
+                                        </p>
+                                    </div>
+
+                                    <p className="mt-4 text-sm text-red-600">
+                                        This action cannot be undone.
+                                    </p>
+
+                                    <div className="mt-6 flex justify-end gap-3">
+                                        <button
+                                            onClick={closeDeleteModal}
+                                            disabled={actionLoading}
+                                            className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                                        >
+                                            Cancel
+                                        </button>
+
+                                        <button
+                                            onClick={handleConfirmDelete}
+                                            disabled={actionLoading}
+                                            className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+                                        >
+                                            {actionLoading ? "Deleting..." : "Delete"}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {totalPages > 1 && (
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-6 py-4 border-t">
                                 <p className="text-sm text-gray-600">
-                                    Showing {(currentPage - 1) * tasksPerPage + 1}{" "}
-                                    to{" "}
-                                    {Math.min(
-                                        currentPage * tasksPerPage,
-                                        filteredTasks.length
-                                    )}{" "}
-                                    of {filteredTasks.length} tasks
+                                    Showing {(currentPage - 1) * tasksPerPage + 1} to{" "}
+                                    {Math.min(currentPage * tasksPerPage, filteredTasks.length)} of{" "}
+                                    {filteredTasks.length} tasks
                                 </p>
 
                                 <div className="flex items-center gap-2">
                                     <button
-                                        onClick={() =>
-                                            goToPage(currentPage - 1)
-                                        }
+                                        onClick={() => goToPage(currentPage - 1)}
                                         disabled={currentPage === 1}
                                         className="px-3 py-1.5 rounded-lg border bg-white text-sm disabled:opacity-50"
                                     >
@@ -599,9 +770,7 @@ function Tasks() {
                                     ))}
 
                                     <button
-                                        onClick={() =>
-                                            goToPage(currentPage + 1)
-                                        }
+                                        onClick={() => goToPage(currentPage + 1)}
                                         disabled={currentPage === totalPages}
                                         className="px-3 py-1.5 rounded-lg border bg-white text-sm disabled:opacity-50"
                                     >

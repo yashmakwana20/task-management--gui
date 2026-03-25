@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getTasks } from "../services/taskService";
 import { getUserRole, getUserId } from "../utils/auth";
 import Loader from "../components/Loader";
+import StatCard from "../components/StatCard";
 
 function Dashboard() {
     const [tasks, setTasks] = useState([]);
@@ -80,55 +81,45 @@ function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
-                <div
+                <StatCard
+                    title="Total Tasks"
+                    value={summary.total}
+                    valueClassName="text-gray-800"
                     onClick={() => navigate("/tasks")}
-                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
-                >
-                    <p className="text-gray-500 text-sm">Total Tasks</p>
-                    <h3 className="text-3xl font-bold text-gray-800 mt-2">
-                        {summary.total}
-                    </h3>
-                </div>
+                    clickable
+                />
 
-                <div
+                <StatCard
+                    title="Pending Tasks"
+                    value={summary.pending}
+                    valueClassName="text-yellow-600"
                     onClick={() => navigate("/tasks?status=Pending")}
-                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
-                >
-                    <p className="text-gray-500 text-sm">Pending</p>
-                    <h3 className="text-3xl font-bold text-yellow-600 mt-2">
-                        {summary.pending}
-                    </h3>
-                </div>
+                    clickable
+                />
 
-                <div
+                <StatCard
+                    title="In Progress Tasks"
+                    value={summary.inProgress}
+                    valueClassName="text-blue-600"
                     onClick={() => navigate("/tasks?status=In%20Progress")}
-                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
-                >
-                    <p className="text-gray-500 text-sm">In Progress</p>
-                    <h3 className="text-3xl font-bold text-blue-600 mt-2">
-                        {summary.inProgress}
-                    </h3>
-                </div>
+                    clickable
+                />
 
-                <div
+                <StatCard
+                    title="Completed Tasks"
+                    value={summary.completed}
+                    valueClassName="text-green-600"
                     onClick={() => navigate("/tasks?status=Completed")}
-                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
-                >
-                    <p className="text-gray-500 text-sm">Completed</p>
-                    <h3 className="text-3xl font-bold text-green-600 mt-2">
-                        {summary.completed}
-                    </h3>
-                </div>
+                    clickable
+                />
 
-                <div
+                <StatCard
+                    title="High Priority"
+                    value={summary.highPriority}
+                    valueClassName="text-red-600"
                     onClick={() => navigate("/tasks?priority=High")}
-                    className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-md transition"
-                >
-                    <p className="text-gray-500 text-sm">High Priority</p>
-                    <h3 className="text-3xl font-bold text-red-600 mt-2">
-                        {summary.highPriority}
-                    </h3>
-                </div>
+                    clickable
+                />
             </div>
 
             <div className="bg-white rounded-xl shadow p-6">

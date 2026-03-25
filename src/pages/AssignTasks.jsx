@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { getTasks, assignTask } from "../services/taskService";
 import { getUsers } from "../services/userService";
@@ -28,8 +28,8 @@ function AssignTasks() {
                 getUsers(),
             ]);
 
-            setTasks(Array.isArray(taskResponse.data.data) ? taskResponse.data.data : []);
-            setUsers(Array.isArray(userResponse.data) ? userResponse.data : []);
+            setTasks(Array.isArray(taskResponse?.data?.data) ? taskResponse.data.data : []);
+            setUsers(Array.isArray(userResponse?.data) ? userResponse.data : []);
         } catch (error) {
             console.error("Load assign tasks data error:", error);
             toast.error("Failed to load data.");
@@ -61,9 +61,7 @@ function AssignTasks() {
             const search = searchText.toLowerCase();
 
             const matchesSearch =
-                !search ||
-                title.includes(search) ||
-                description.includes(search);
+                !search || title.includes(search) || description.includes(search);
 
             const matchesStatus =
                 statusFilter === "All" || task.status === statusFilter;
@@ -100,8 +98,7 @@ function AssignTasks() {
         selectableTaskIds.every((id) => selectedTaskIds.includes(id));
 
     const isSomeSelected =
-        selectableTaskIds.some((id) => selectedTaskIds.includes(id)) &&
-        !isAllSelected;
+        selectableTaskIds.some((id) => selectedTaskIds.includes(id)) && !isAllSelected;
 
     const toggleTaskSelection = (taskId) => {
         setSelectedTaskIds((prev) =>
@@ -117,9 +114,7 @@ function AssignTasks() {
                 prev.filter((id) => !selectableTaskIds.includes(id))
             );
         } else {
-            setSelectedTaskIds((prev) => [
-                ...new Set([...prev, ...selectableTaskIds]),
-            ]);
+            setSelectedTaskIds((prev) => [...new Set([...prev, ...selectableTaskIds])]);
         }
     };
 
@@ -147,13 +142,8 @@ function AssignTasks() {
         try {
             setAssigning(true);
 
-            const selectedTasks = tasks.filter((task) =>
-                selectedTaskIds.includes(task.id)
-            );
-
-
             const updatedTask = {
-                taskIds: selectedTasks.map((task) => task.id),
+                taskIds: selectedTaskIds,
                 userId: Number(selectedUserId),
             };
 
@@ -168,7 +158,6 @@ function AssignTasks() {
             );
 
             toast.success("Selected tasks assigned successfully.");
-
             setSelectedTaskIds([]);
             closeAssignModal();
         } catch (error) {
@@ -187,37 +176,93 @@ function AssignTasks() {
         );
     }, [tasks]);
 
+    const totalTasks = filteredTasks.length;
+    const totalAssigned = filteredTasks.filter((task) => isTaskAssigned(task)).length;
+    const totalUnassigned = filteredTasks.filter((task) => !isTaskAssigned(task)).length;
+
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case "Pending":
+                return "bg-yellow-100 text-yellow-800";
+            case "In Progress":
+                return "bg-blue-100 text-blue-800";
+            case "Completed":
+                return "bg-green-100 text-green-800";
+            default:
+                return "bg-gray-100 text-gray-800";
+        }
+    };
+
+    const getPriorityBadge = (priority) => {
+        switch (priority) {
+            case "High":
+                return "bg-red-100 text-red-800";
+            case "Medium":
+                return "bg-orange-100 text-orange-800";
+            case "Low":
+                return "bg-emerald-100 text-emerald-800";
+            default:
+                return "bg-gray-100 text-gray-800";
+        }
+    };
+
     if (loading) {
         return <Loader />;
     }
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-                <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-800">
-                            Assign Tasks
-                        </h1>
-                        <p className="text-gray-500 mt-1">
-                            Select multiple unassigned tasks and assign them to a user.
-                        </p>
+            <div className="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-sm border border-gray-200 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800">Assign Tasks</h1>
+                    <p className="mt-1 text-sm text-gray-500">
+                        Select multiple unassigned tasks and assign them to a user.
+                    </p>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                    <div className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">
+                        Selected: <span className="font-bold">{selectedTaskIds.length}</span>
                     </div>
 
                     <button
                         onClick={openAssignModal}
                         disabled={selectedTaskIds.length === 0}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-3 rounded-lg font-medium transition"
+                        className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                     >
                         Assign Selected ({selectedTaskIds.length})
                     </button>
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-200">
+                    <p className="text-sm text-gray-500">Filtered Tasks</p>
+                    <h3 className="mt-2 text-2xl font-bold text-gray-800">{totalTasks}</h3>
+                </div>
+
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-200">
+                    <p className="text-sm text-gray-500">Assigned</p>
+                    <h3 className="mt-2 text-2xl font-bold text-green-600">{totalAssigned}</h3>
+                </div>
+
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-200">
+                    <p className="text-sm text-gray-500">Unassigned</p>
+                    <h3 className="mt-2 text-2xl font-bold text-orange-600">{totalUnassigned}</h3>
+                </div>
+
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-gray-200">
+                    <p className="text-sm text-gray-500">Available Users</p>
+                    <h3 className="mt-2 text-2xl font-bold text-purple-600">{users.length}</h3>
+                </div>
+            </div>
+
+            <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-200">
+                <h2 className="mb-4 text-lg font-semibold text-gray-800">Filters</h2>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
                             Search
                         </label>
                         <input
@@ -225,18 +270,18 @@ function AssignTasks() {
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
                             placeholder="Search title or description"
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
                             Status
                         </label>
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="All">All</option>
                             <option value="Pending">Pending</option>
@@ -246,13 +291,13 @@ function AssignTasks() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
                             Priority
                         </label>
                         <select
                             value={priorityFilter}
                             onChange={(e) => setPriorityFilter(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="All">All</option>
                             <option value="Low">Low</option>
@@ -262,13 +307,13 @@ function AssignTasks() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="mb-2 block text-sm font-medium text-gray-700">
                             Assignment
                         </label>
                         <select
                             value={assignmentFilter}
                             onChange={(e) => setAssignmentFilter(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option value="All">All</option>
                             <option value="Unassigned">Unassigned</option>
@@ -278,108 +323,139 @@ function AssignTasks() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm p-6 overflow-x-auto">
-                <table className="min-w-full">
-                    <thead>
-                        <tr className="border-b text-left text-sm text-gray-600">
-                            <th className="py-3 pr-4 w-14">
-                                <input
-                                    type="checkbox"
-                                    checked={isAllSelected}
-                                    ref={(el) => {
-                                        if (el) el.indeterminate = isSomeSelected;
-                                    }}
-                                    onChange={handleSelectAll}
-                                    className="h-4 w-4"
-                                />
-                            </th>
-                            <th className="py-3 pr-4">Title</th>
-                            <th className="py-3 pr-4">Description</th>
-                            <th className="py-3 pr-4">Status</th>
-                            <th className="py-3 pr-4">Priority</th>
-                            <th className="py-3 pr-4">Assigned To</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {filteredTasks.length > 0 ? (
-                            filteredTasks.map((task) => {
-                                const assigned = isTaskAssigned(task);
-                                const checked = selectedTaskIds.includes(task.id);
-
-                                return (
-                                    <tr key={task.id} className="border-b align-top">
-                                        <td className="py-3 pr-4">
-                                            {!assigned ? (
-                                                <input
-                                                    type="checkbox"
-                                                    checked={checked}
-                                                    onChange={() => toggleTaskSelection(task.id)}
-                                                    className="h-4 w-4"
-                                                />
-                                            ) : null}
-                                        </td>
-
-                                        <td className="py-3 pr-4 font-medium text-gray-800">
-                                            {task.title}
-                                        </td>
-
-                                        <td className="py-3 pr-4 text-gray-600">
-                                            {task.description}
-                                        </td>
-
-                                        <td className="py-3 pr-4 text-gray-600">
-                                            {task.status}
-                                        </td>
-
-                                        <td className="py-3 pr-4 text-gray-600">
-                                            {task.priority}
-                                        </td>
-
-                                        <td className="py-3 pr-4 text-gray-600">
-                                            {assigned
-                                                ? userMap[task.userId] || `User ${task.userId}`
-                                                : <span className="px-3 py-1 text-sm rounded-full bg-red-100 text-red-700">
-                                                    Not Assigned
-                                                </span>}
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        ) : (
+            <div className="overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-200">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                        <thead className="bg-gray-50 text-left text-gray-600">
                             <tr>
-                                <td colSpan="6" className="py-6 text-center text-gray-500">
-                                    No tasks found.
-                                </td>
+                                <th className="px-4 py-4">
+                                    <input
+                                        type="checkbox"
+                                        ref={(el) => {
+                                            if (el) el.indeterminate = isSomeSelected;
+                                        }}
+                                        checked={isAllSelected}
+                                        onChange={handleSelectAll}
+                                        className="h-4 w-4"
+                                    />
+                                </th>
+                                <th className="px-4 py-4 font-semibold">Title</th>
+                                <th className="px-4 py-4 font-semibold">Description</th>
+                                <th className="px-4 py-4 font-semibold">Status</th>
+                                <th className="px-4 py-4 font-semibold">Priority</th>
+                                <th className="px-4 py-4 font-semibold">Assigned To</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+
+                        <tbody className="divide-y divide-gray-100">
+                            {filteredTasks.length > 0 ? (
+                                filteredTasks.map((task) => {
+                                    const assigned = isTaskAssigned(task);
+                                    const checked = selectedTaskIds.includes(task.id);
+
+                                    return (
+                                        <tr
+                                            key={task.id}
+                                            className={`transition hover:bg-gray-50 ${checked ? "bg-blue-50" : ""
+                                                }`}
+                                        >
+                                            <td className="px-4 py-4 align-top">
+                                                {!assigned ? (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={checked}
+                                                        onChange={() => toggleTaskSelection(task.id)}
+                                                        className="mt-1 h-4 w-4"
+                                                    />
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">—</span>
+                                                )}
+                                            </td>
+
+                                            <td className="px-4 py-4 align-top font-medium text-gray-800">
+                                                {task.title}
+                                            </td>
+
+                                            <td className="px-4 py-4 align-top text-gray-600">
+                                                <div className="max-w-xs truncate">
+                                                    {task.description || "-"}
+                                                </div>
+                                            </td>
+
+                                            <td className="px-4 py-4 align-top">
+                                                <span
+                                                    className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadge(
+                                                        task.status
+                                                    )}`}
+                                                >
+                                                    {task.status}
+                                                </span>
+                                            </td>
+
+                                            <td className="px-4 py-4 align-top">
+                                                <span
+                                                    className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getPriorityBadge(
+                                                        task.priority
+                                                    )}`}
+                                                >
+                                                    {task.priority}
+                                                </span>
+                                            </td>
+
+                                            <td className="px-4 py-4 align-top">
+                                                {assigned ? (
+                                                    <span className="inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                                                        {userMap[task.userId] || `User ${task.userId}`}
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-orange-700">
+                                                        Not Assigned
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-14 text-center">
+                                        <div className="flex flex-col items-center justify-center text-center">
+                                            <div className="mb-3 text-4xl">📋</div>
+                                            <h3 className="text-lg font-semibold text-gray-700">
+                                                No tasks found
+                                            </h3>
+                                            <p className="mt-1 text-sm text-gray-500">
+                                                Try changing your search or filter values.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {showAssignModal && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-                    <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
-                        <h2 className="text-xl font-bold text-gray-800 mb-2">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                        <h2 className="text-xl font-bold text-gray-800">
                             Assign Selected Tasks
                         </h2>
 
-                        <p className="text-sm text-gray-500 mb-4">
-                            You selected{" "}
-                            <span className="font-semibold text-gray-700">
-                                {selectedTaskIds.length}
-                            </span>{" "}
+                        <p className="mt-2 text-sm text-gray-600">
+                            You selected <span className="font-semibold">{selectedTaskIds.length}</span>{" "}
                             task(s). Select a user to assign them.
                         </p>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <div className="mt-5">
+                            <label className="mb-2 block text-sm font-medium text-gray-700">
                                 User
                             </label>
                             <select
                                 value={selectedUserId}
                                 onChange={(e) => setSelectedUserId(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="">Select user</option>
                                 {users.map((user) => (
@@ -390,10 +466,10 @@ function AssignTasks() {
                             </select>
                         </div>
 
-                        <div className="flex justify-end gap-3 mt-6">
+                        <div className="mt-6 flex justify-end gap-3">
                             <button
                                 onClick={closeAssignModal}
-                                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+                                className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                             >
                                 Cancel
                             </button>
@@ -401,7 +477,7 @@ function AssignTasks() {
                             <button
                                 onClick={handleApplyAssignment}
                                 disabled={assigning}
-                                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white transition"
+                                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                             >
                                 {assigning ? "Applying..." : "Apply"}
                             </button>
