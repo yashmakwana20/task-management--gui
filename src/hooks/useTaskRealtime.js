@@ -11,7 +11,7 @@ export default function useTaskRealtime(onTaskChanged) {
             try {
                 const connection = await startSignalRConnection();
 
-                connection.off("TaskChanged", handler);
+                //connection.off("TaskChanged", handler);
 
                 handler = async (payload) => {
                     console.log("TaskChanged event received:", payload);
@@ -20,9 +20,9 @@ export default function useTaskRealtime(onTaskChanged) {
                         await onTaskChanged(payload);
                     }
 
-                    if (payload?.eventType === "task-assigned") {
-                        toast.success("Task data updated in real time.");
-                    }
+                    //if (payload?.eventType === "task-assigned") {
+                    //    toast.success("Task data updated in real time.");
+                    //}
                 };
 
                 connection.on("TaskChanged", handler);

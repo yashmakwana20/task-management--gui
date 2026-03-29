@@ -42,13 +42,13 @@ function AssignTasks() {
         }
     }, [userId]);
 
-    useTaskRealtime(async () => {
-        await loadData();
-    });
-
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    useTaskRealtime(async () => {
+        await loadData();
+    });
 
     const isTaskAssigned = (task) => {
         return !!task.userId;

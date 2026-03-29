@@ -78,15 +78,16 @@ function Tasks() {
         }
     }, [userRole, userId]);
 
+    useEffect(() => {
+        loadTasks();
+    }, [loadTasks]);
+
     useTaskRealtime(async (payload) => {
         console.log("USER TAB EVENT RECEIVED:", payload);
         await loadTasks();
         console.log("USER TAB RELOAD DONE");
     });
 
-    useEffect(() => {
-        loadTasks();
-    }, [loadTasks]);
 
     useEffect(() => {
         setStatusFilter(searchParams.get("status") || "All");
