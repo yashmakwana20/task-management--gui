@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTasks } from "../services/taskService";
 import Loader from "../components/Loader";
+import useTaskRealtime from "../hooks/useTaskRealtime";
 
 function AdminDashboard() {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    const loadTasks = async () => {
+    const loadTasks = useCallback(async () => {
         try {
             setLoading(true);
             const res = await getTasks(0);
@@ -19,11 +20,15 @@ function AdminDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         loadTasks();
-    }, []);
+    }, [loadTasks]);
+
+    useTaskRealtime(async () => {
+        await loadTasks();
+    });
 
     const summary = useMemo(() => {
         return {

@@ -11,6 +11,8 @@ import toast from "react-hot-toast";
 import { useSearchParams } from "react-router-dom";
 import { getUserRole, getUserId } from "../utils/auth";
 import StatCard from "../components/StatCard";
+import { useCallback } from "react";
+import useTaskRealtime from "../hooks/useTaskRealtime";
 
 function Tasks() {
     const userRole = getUserRole();
@@ -51,7 +53,7 @@ function Tasks() {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState(null);
 
-    const loadTasks = async () => {
+    const loadTasks = useCallback(async () => {
         try {
             setLoading(true);
 
@@ -74,11 +76,17 @@ function Tasks() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [userRole, userId]);
+
+    useTaskRealtime(async (payload) => {
+        console.log("USER TAB EVENT RECEIVED:", payload);
+        await loadTasks();
+        console.log("USER TAB RELOAD DONE");
+    });
 
     useEffect(() => {
         loadTasks();
-    }, []);
+    }, [loadTasks]);
 
     useEffect(() => {
         setStatusFilter(searchParams.get("status") || "All");

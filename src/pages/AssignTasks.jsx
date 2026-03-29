@@ -1,10 +1,14 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import { getTasks, assignTask } from "../services/taskService";
 import { getUsers } from "../services/userService";
 import Loader from "../components/Loader";
+import useTaskRealtime from "../hooks/useTaskRealtime";
+import { getUserId } from "../utils/auth";
 
 function AssignTasks() {
+    const userId = getUserId(); 
+
     const [tasks, setTasks] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,7 +23,7 @@ function AssignTasks() {
     const [selectedUserId, setSelectedUserId] = useState("");
     const [assigning, setAssigning] = useState(false);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             setLoading(true);
 
@@ -36,11 +40,15 @@ function AssignTasks() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [userId]);
+
+    useTaskRealtime(async () => {
+        await loadData();
+    });
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [loadData]);
 
     const isTaskAssigned = (task) => {
         return !!task.userId;

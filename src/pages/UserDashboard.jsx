@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getTasks } from "../services/taskService";
 import { getUserId } from "../utils/auth";
 import Loader from "../components/Loader";
+import useTaskRealtime from "../hooks/useTaskRealtime";
 
 function UserDashboard() {
     const [tasks, setTasks] = useState([]);
@@ -11,8 +12,9 @@ function UserDashboard() {
 
     const userId = getUserId();
 
-    const loadTasks = async () => {
+    const loadTasks = useCallback(async () => {
         try {
+            console.log("Loading tasks for userId:", userId);
             setLoading(true);
             const res = await getTasks(userId);
             const allTasks = res?.data?.data || [];
@@ -21,6 +23,8 @@ function UserDashboard() {
                 (task) => Number(task.userId) === Number(userId)
             );
 
+            console.log("Fresh API response:", allTasks);
+
             setTasks(userTasks);
         } catch (error) {
             console.error("Error loading user dashboard tasks:", error);
@@ -28,11 +32,15 @@ function UserDashboard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [userId]);
 
     useEffect(() => {
         loadTasks();
-    }, []);
+    }, [loadTasks]);
+
+    useTaskRealtime(async () => {
+        await loadTasks();
+    });
 
     const summary = useMemo(() => {
         return {
