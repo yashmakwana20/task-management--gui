@@ -46,9 +46,11 @@ function AssignTasks() {
         loadData();
     }, [loadData]);
 
-    useTaskRealtime(async () => {
+    const handleRealtimeTaskChange = useCallback(async () => {
         await loadData();
-    });
+    }, [loadData]);
+
+    useTaskRealtime(handleRealtimeTaskChange);
 
     const isTaskAssigned = (task) => {
         return !!task.userId;

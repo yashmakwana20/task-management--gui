@@ -26,9 +26,11 @@ function AdminDashboard() {
         loadTasks();
     }, [loadTasks]);
 
-    useTaskRealtime(async () => {
+    const handleRealtimeTaskChange = useCallback(async () => {
         await loadTasks();
-    });
+    }, [loadTasks]);
+
+    useTaskRealtime(handleRealtimeTaskChange);
 
     const summary = useMemo(() => {
         return {

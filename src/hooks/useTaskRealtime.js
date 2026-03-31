@@ -1,30 +1,31 @@
-import { useEffect } from "react";
-import { startSignalRConnection, getSignalRConnection } from "../services/signalrService";
-import toast from "react-hot-toast";
+import { useEffect, useRef } from "react";
+import {
+    startSignalRConnection,
+    getSignalRConnection,
+} from "../services/signalrService";
 
 export default function useTaskRealtime(onTaskChanged) {
+    const callbackRef = useRef(onTaskChanged);
+
+    useEffect(() => {
+        callbackRef.current = onTaskChanged;
+    }, [onTaskChanged]);
+
     useEffect(() => {
         let isMounted = true;
-        let handler = null;
+
+        const handler = async (payload) => {
+            console.log("TaskChanged event received:", payload);
+
+            if (isMounted && typeof callbackRef.current === "function") {
+                await callbackRef.current(payload);
+            }
+        };
 
         const register = async () => {
             try {
                 const connection = await startSignalRConnection();
-
-                //connection.off("TaskChanged", handler);
-
-                handler = async (payload) => {
-                    console.log("TaskChanged event received:", payload);
-
-                    if (isMounted && typeof onTaskChanged === "function") {
-                        await onTaskChanged(payload);
-                    }
-
-                    //if (payload?.eventType === "task-assigned") {
-                    //    toast.success("Task data updated in real time.");
-                    //}
-                };
-
+                connection.off("TaskChanged", handler);
                 connection.on("TaskChanged", handler);
             } catch (error) {
                 console.error("SignalR connection failed:", error);
@@ -36,9 +37,9 @@ export default function useTaskRealtime(onTaskChanged) {
         return () => {
             isMounted = false;
             const connection = getSignalRConnection();
-            if (connection && handler) {
+            if (connection) {
                 connection.off("TaskChanged", handler);
             }
         };
-    }, [onTaskChanged]);
+    }, []);
 }
