@@ -1,6 +1,7 @@
 ﻿import { useNavigate } from "react-router-dom";
 import { clearAuthTokens } from "../utils/auth";
 import toast from "react-hot-toast";
+import NotificationBell from "./NotificationBell";
 
 const Navbar = ({ onMenuClick }) => {
     const navigate = useNavigate();
@@ -12,28 +13,35 @@ const Navbar = ({ onMenuClick }) => {
     };
 
     return (
-        <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
-            <div className="flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div className="sticky top-0 z-30 border-b border-gray-200 bg-white px-4 py-3 shadow-sm md:px-6">
+            <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={onMenuClick}
-                        className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 lg:hidden"
-                    >
-                        ☰
-                    </button>
+                    {onMenuClick && (
+                        <button
+                            onClick={onMenuClick}
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm lg:hidden"
+                        >
+                            ☰
+                        </button>
+                    )}
 
-                    <h1 className="text-2xl font-bold text-gray-900">Task Manager</h1>
+                    <h1 className="text-xl font-bold text-gray-800">
+                        Task Manager
+                    </h1>
                 </div>
 
-                <button
-                    onClick={logOut}
-                    className="rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-600 sm:px-5"
-                >
-                    Logout
-                </button>
+                <div className="flex items-center gap-3">
+                    <NotificationBell />
+
+                    <button
+                        onClick={logOut}
+                        className="rounded-lg bg-red-500 px-4 py-2 text-white transition hover:bg-red-600"
+                    >
+                        Logout
+                    </button>
+                </div>
             </div>
-        </header>
+        </div>
     );
 };
 
