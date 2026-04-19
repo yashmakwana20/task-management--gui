@@ -1,6 +1,7 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import useNotifications from "../hooks/useNotifications";
+import { getRelativeTime } from "../utils/timeUtils";
 
 function NotificationBell() {
     const [open, setOpen] = useState(false);
@@ -117,7 +118,7 @@ function NotificationBell() {
                                                 </p>
                                                 <p className="mt-2 text-xs text-gray-400">
                                                     {createdAt
-                                                        ? new Date(createdAt).toLocaleString()
+                                                        ? new Date(createdAt).toLocaleString() + " - " + getRelativeTime(createdAt)
                                                         : ""}
                                                 </p>
                                             </div>
